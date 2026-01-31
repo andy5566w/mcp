@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ProductService } from "../services/ProductService.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 
 const server = new McpServer({
@@ -28,14 +29,17 @@ const ProductCreateInput = z.object({
   quantity: z.number().int().nonnegative(),
 });
 
+// @ts-ignore - Type instantiation depth issue with nested nullable/optional types in Zod schema
 server.registerTool(
   "add_product",
   {
     title: "Add Product",
     description: "add a new product to the database",
-    inputSchema: ProductCreateInput.shape,
+    inputSchema: ProductCreateInput.shape as any,
   },
-  async ({ sku, name, description, price, quantity }: z.infer<typeof ProductCreateInput>) => {
+  // @ts-ignore - Type inference issues with Zod schema and MCP types
+  async (args: any) => {
+    const { sku, name, description, price, quantity } = args as z.infer<typeof ProductCreateInput>;
     try {
       // 呼叫業務邏輯
       const created = await svc.addProduct({ sku, name, description, price, quantity });
@@ -44,7 +48,7 @@ server.registerTool(
       return {
         content: [
           {
-            type: "text",
+            type: "text" as const,
             // 必須將物件轉為 JSON 字串，LLM 才能讀取結構化資料
             text: JSON.stringify(created, null, 2)
           }
@@ -56,7 +60,7 @@ server.registerTool(
       return {
         content: [
           {
-            type: "text",
+            type: "text" as const,
             text: `Failed to create product: ${error instanceof Error ? error.message : "Unknown error"}`
           }
         ],
@@ -64,4 +68,11 @@ server.registerTool(
       };
     }
   }
-)
+);
+
+// start communication with the client
+(async () => {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.log('MCP server is running on stdio');
+})();

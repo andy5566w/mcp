@@ -70,9 +70,26 @@ server.registerTool(
   }
 );
 
+// Log to stderr so Cursor MCP logs show startup/errors (stdout is used for MCP protocol)
+const log = (msg: string) => console.error(`[ecommerce-mcp] ${msg}`);
+
+process.on('uncaughtException', (err) => {
+  log(`uncaughtException: ${err.message}`);
+  console.error(err);
+});
+process.on('unhandledRejection', (reason, p) => {
+  log(`unhandledRejection: ${String(reason)}`);
+});
+
 // start communication with the client
 (async () => {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.log('MCP server is running on stdio');
+  try {
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    log('MCP server is running on stdio (ready for ListOfferings)');
+  } catch (err) {
+    log(`Failed to start: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(err);
+    process.exit(1);
+  }
 })();

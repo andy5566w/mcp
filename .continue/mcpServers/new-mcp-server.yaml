@@ -1,10 +1,13 @@
-name: New MCP server
+# 本專案 MCP server 範例（Cursor / Continue 用）
+# 請依實際路徑調整；若用 Cursor 內建 MCP，在 Cursor Settings → MCP 裡設定 command/args 較可靠
+name: ecommerce-products-mcp
 version: 0.0.1
 schema: v1
 mcpServers:
-  - name: New MCP server
-    command: npx
+  - name: ecommerce-products-mcp
+    command: npm
     args:
-      - -y
-      - <your-mcp-server>
+      - run
+      - dev:mcp
+    # 若有 cwd 選項，設成此專案根目錄（diu）
     env: {}

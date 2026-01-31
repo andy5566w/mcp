@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ProductService } from "../services/ProductService.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { pool } from "../db.js";
 
 
 const server = new McpServer({
@@ -84,11 +85,21 @@ process.on('unhandledRejection', (reason, p) => {
 // start communication with the client
 (async () => {
   try {
+    // 檢查資料庫連線（可選，但建議在啟動時驗證）
+    log('Checking database connection...');
+    const conn = await pool.getConnection();
+    await conn.ping(); // 測試連線
+    conn.release();
+    log('Database connection OK');
+
     const transport = new StdioServerTransport();
     await server.connect(transport);
     log('MCP server is running on stdio (ready for ListOfferings)');
   } catch (err) {
     log(`Failed to start: ${err instanceof Error ? err.message : String(err)}`);
+    if (err instanceof Error && err.message.includes('ECONNREFUSED')) {
+      log('Database connection failed. Please check your .env file and ensure MySQL is running.');
+    }
     console.error(err);
     process.exit(1);
   }

@@ -30,6 +30,10 @@ const ProductCreateInput = z.object({
   quantity: z.number().int().nonnegative(),
 });
 
+const ProductGetByIdInput = z.object({
+  id: z.number().int().positive(),
+});
+
 // @ts-ignore - Type instantiation depth issue with nested nullable/optional types in Zod schema
 server.registerTool(
   "add_product",
@@ -71,8 +75,29 @@ server.registerTool(
   }
 );
 
-// 設置錯誤處理器
-setupErrorHandlers();
+// @ts-ignore - Type instantiation depth issue with nested nullable/optional types in Zod schema
+server.registerTool(
+  "get_product_by_id",
+  {
+    title: "Get Product by ID",
+    description: "get a product by id from the database",
+    inputSchema: ProductGetByIdInput.shape as any,
+  },
+  // @ts-ignore - Type inference issues with Zod schema and MCP types
+  async (args: any) => {
+    const { id } = args as z.infer<typeof ProductGetByIdInput>;
+    const product = await svc.getProductById(id);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(product, null, 2)
+        }
+      ],
+      isError: false
+    };
+  }
+);
 
 // 啟動 MCP 服務器
 (async () => {

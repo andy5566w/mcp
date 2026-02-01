@@ -2,8 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ProductService } from "../services/ProductService.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { pool } from "../db.js";
-
+import { log, setupErrorHandlers } from "../utils/logger.js";
+import { checkDatabaseConnection } from "../utils/db-check.js";
 
 const server = new McpServer({
   name: "ecommerce-custom-mcp",
@@ -71,35 +71,20 @@ server.registerTool(
   }
 );
 
-// Log to stderr so Cursor MCP logs show startup/errors (stdout is used for MCP protocol)
-const log = (msg: string) => console.error(`[ecommerce-mcp] ${msg}`);
+// 設置錯誤處理器
+setupErrorHandlers();
 
-process.on('uncaughtException', (err) => {
-  log(`uncaughtException: ${err.message}`);
-  console.error(err);
-});
-process.on('unhandledRejection', (reason, p) => {
-  log(`unhandledRejection: ${String(reason)}`);
-});
-
-// start communication with the client
+// 啟動 MCP 服務器
 (async () => {
   try {
     // 檢查資料庫連線（可選，但建議在啟動時驗證）
-    log('Checking database connection...');
-    const conn = await pool.getConnection();
-    await conn.ping(); // 測試連線
-    conn.release();
-    log('Database connection OK');
+    await checkDatabaseConnection();
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
     log('MCP server is running on stdio (ready for ListOfferings)');
   } catch (err) {
     log(`Failed to start: ${err instanceof Error ? err.message : String(err)}`);
-    if (err instanceof Error && err.message.includes('ECONNREFUSED')) {
-      log('Database connection failed. Please check your .env file and ensure MySQL is running.');
-    }
     console.error(err);
     process.exit(1);
   }

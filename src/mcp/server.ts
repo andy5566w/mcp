@@ -34,6 +34,11 @@ const ProductGetByIdInput = z.object({
   id: z.number().int().positive(),
 });
 
+const ProductListInput = z.object({
+  limit: z.number().int().nonnegative().optional().default(50),
+  offset: z.number().int().nonnegative().optional().default(0),
+});
+
 // @ts-ignore - Type instantiation depth issue with nested nullable/optional types in Zod schema
 server.registerTool(
   "add_product",
@@ -95,6 +100,30 @@ server.registerTool(
         }
       ],
       isError: !product
+    };
+  }
+);
+
+// @ts-ignore - Type instantiation depth issue with nested nullable/optional types in Zod schema
+server.registerTool(
+  "list_products",
+  {
+    title: "List Products",
+    description: "list products from the database with pagination",
+    inputSchema: ProductListInput.shape as any,
+  },
+  // @ts-ignore - Type inference issues with Zod schema and MCP types
+  async (args: any) => {
+    const { limit, offset } = args as z.infer<typeof ProductListInput>;
+    const products = await svc.listProducts(limit, offset);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(products, null, 2)
+        }
+      ],
+      isError: false
     };
   }
 );

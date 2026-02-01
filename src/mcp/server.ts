@@ -91,10 +91,10 @@ server.registerTool(
       content: [
         {
           type: "text" as const,
-          text: JSON.stringify(product, null, 2)
+          text: product ? JSON.stringify(product, null, 2) : "Product not found"
         }
       ],
-      isError: false
+      isError: !product
     };
   }
 );

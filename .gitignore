@@ -33,3 +33,6 @@ dist/
 # 臨時檔案
 .pnpm-debug.log*
 .local-batch-data
+
+# Cursor IDE 規則檔案（不追蹤）
+.cursor/rules/git-commit.mdc
